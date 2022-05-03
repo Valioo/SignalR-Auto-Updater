@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using TransferableObjects;
 using TransferableObjects.Client;
 
 namespace SignalR.Server
@@ -14,6 +15,7 @@ namespace SignalR.Server
     public class ChatHub : Hub
     {
         SoftInformationService _softInfoService = new SoftInformationService(new ServerDbContext());
+
         public async Task SendMessage(string clientInfo)
         {
             var clientInfoDto = JsonConvert.DeserializeObject<ClientInfoDto>(clientInfo);
@@ -48,7 +50,7 @@ namespace SignalR.Server
         {
             if (returnStatement == "Ok")
             {
-                Console.WriteLine("Working perfectly");
+                Console.WriteLine("Updated successfully");
                 var clientInfoDto = JsonConvert.DeserializeObject<ClientInfoDto>(clientInfoJson);
                 var updateInfo = _softInfoService.GetUpdateInfoAsync(clientInfoDto).Result;
                 await Clients.Caller.SendAsync("UpdateDatabaseClient", clientInfoDto.ClientInformation.Directory, updateInfo.SoftInformation.Version);
@@ -60,6 +62,7 @@ namespace SignalR.Server
 
         private Dictionary<int,byte[]> GetBytesIntoChunks(byte[] byteArrayInitial)
         {
+            byteArrayInitial = TransferableObjects.Extensions.Extensions.Compress(byteArrayInitial);
             var dictionary = new Dictionary<int, byte[]>();
             int splitSize = new Random().Next(byteArrayInitial.Length/25, byteArrayInitial.Length/10);
             var arrays = byteArrayInitial.Split(splitSize);

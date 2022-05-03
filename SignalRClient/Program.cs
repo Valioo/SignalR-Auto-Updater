@@ -1,27 +1,48 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using Microsoft.AspNet.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using SignalRClient.Context;
 using SignalRClient.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Net.Http;
 using TransferableObjects;
+using TransferableObjects.Extensions;
 
 namespace SignalRClient
 {
     internal class Program
     {
         static readonly ClientInfoService clientService = new ClientInfoService(new ClientInfoContext());
+        static UpdateInfo updateInfo;
 
         static void Main(string[] args)
         {
             var conn = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5000/chatHub")
+                .WithUrl("https://localhost:5001/chatHub", (opts) =>
+                {
+                    opts.HttpMessageHandlerFactory = (message) =>
+                    {
+                        if (message is HttpClientHandler clientHandler)
+                            // always verify the SSL certificate
+                            clientHandler.ServerCertificateCustomValidationCallback +=
+                                (sender, certificate, chain, sslPolicyErrors) => { return true; };
+                        return message;
+                    };
+                })
                 .Build();
-            conn.StartAsync().Wait();
+            try
+            {
+                conn.StartAsync().Wait();   
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             string clientInfoJson = clientService.GetJsonClientInfo();
-            UpdateInfo updateInfo;
+
 
             conn.InvokeAsync("SendMessage", clientInfoJson);   
             conn.On("ReceiveMessage", (string updateInfoS) =>
@@ -44,43 +65,18 @@ namespace SignalRClient
                 dictionary.Add(num, byteChunkArr);
                 if (ready)
                 {
-                    string returnStatement = SortDictionary(dictionary);
+                    string returnStatement = Extensions.SortDictionary(dictionary, updateInfo);
                     conn.InvokeAsync("ReturnStatement", returnStatement, clientInfoJson);
                 }
             });
 
-            conn.On("UpdateDatabaseClient", (string clientDirectory, string version) =>
+            conn.On("UpdateDatabaseClient", async (string clientDirectory, string version) =>
             {
-                clientService.AddClientInfoAsync(clientDirectory, version);
+                await clientService.AddClientInfoAsync(clientDirectory, version);
             });
 
+
             Console.ReadLine();
-        }
-
-        private static string SortDictionary(Dictionary<int,byte[]> dictionary)
-        {
-            byte[] newByteArr = dictionary.GetValueOrDefault(0);
-            int i = 0;
-            foreach (var item in dictionary.OrderBy(a => a.Key))
-            {
-                if (i == 0)
-                {
-                    i++;
-                    continue;
-                }
-                Extensions.Concat(ref newByteArr, item.Value);
-            }
-
-            try
-            {
-                File.WriteAllBytes(@"C:\TestPr\Client\Windows11DragAndDropToTaskbarFix.exe", newByteArr);
-
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-            return "Ok";
         }
     }
 }

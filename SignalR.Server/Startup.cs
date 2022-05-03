@@ -21,7 +21,7 @@ namespace SignalR.Server
         public void Configure(IApplicationBuilder app)
         {
             app.UseRouting();
-
+            app.UseHttpsRedirection();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapHub<ChatHub>("/chatHub");

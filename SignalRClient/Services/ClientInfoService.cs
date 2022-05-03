@@ -24,14 +24,14 @@ namespace SignalRClient.Services
                 .FirstAsync();
         }
 
-        public void AddClientInfoAsync(string directory, string version)
+        public async Task AddClientInfoAsync(string directory, string version)
         {
             ClientInfo clInfo = new ClientInfo();
             clInfo.LastUpdate = DateTime.Now;
             clInfo.CurrentVersion = version;
             clInfo.Directory = directory;
             _context.ClientInfos.Add(clInfo);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         internal string GetJsonClientInfo()

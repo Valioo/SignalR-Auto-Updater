@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using System;
+using Microsoft.Extensions.Hosting;
 
 namespace SignalR.Server
 {
@@ -16,4 +16,6 @@ namespace SignalR.Server
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>();
     }
+
+
 }
